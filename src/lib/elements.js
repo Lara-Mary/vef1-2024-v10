@@ -9,7 +9,7 @@ export function el(name, attributes = {}, ...children) {
   const e = document.createElement(name);
 
   for (const key of Object.keys(attributes)) {
-    if (typeof attributes[key] === 'function') {
+    if (typeof attributes[key] === "function") {
       e.addEventListener(key, attributes[key]);
       continue;
     }
@@ -18,12 +18,12 @@ export function el(name, attributes = {}, ...children) {
 
   for (const child of children) {
     if (!child) {
-      console.warn('Child is null', name, attributes);
+      console.warn("Child is null", name, attributes);
 
       continue;
     }
 
-    if (typeof child === 'string' || typeof child === 'number') {
+    if (typeof child === "string" || typeof child === "number") {
       e.appendChild(document.createTextNode(child.toString()));
     } else {
       e.appendChild(child);
