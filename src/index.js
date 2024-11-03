@@ -45,6 +45,37 @@ const locations = [
   },
 ];
 
+// Geymir valda staðsetningu
+let selectedLocation;
+
+/**
+ * Allar staðsetning sem hægt er að fá veður fyrir.
+ * @type Array<SearchLocation>
+ */
+let dates = [];
+
+/**
+ * Bætir dögum við dagsetningu.
+ * @param {Date} date 
+ * @param {number} days 
+ * @returns Nýrri dagsetningu
+ */
+function addDays(date, days) {
+  const newDate = new Date(date);
+  newDate.setDate(date.getDate() + days);
+  return newDate;
+}
+
+/**
+ * Býr til dagsetningar næstu 7 daga og setur í dates fylki.
+ */
+function createDates() {
+  for (let i = 0; i < 7; i++) {
+    const dateToAdd = addDays(new Date(), i);
+    dates.push({ title: dateToAdd.toDateString(), date: dateToAdd });
+  }
+}
+
 /**
  * Hreinsar fyrri niðurstöður, passar að niðurstöður séu birtar og birtir element.
  * @param {Element} element
@@ -65,9 +96,10 @@ function renderIntoResultsContent(element) {
 /**
  * Birtir niðurstöður í viðmóti.
  * @param {SearchLocation} location
+ * @param {Date} date
  * @param {Array<import('./lib/weather.js').Forecast>} results
  */
-function renderResults(location, results) {
+function renderResults(location, date, results) {
   const header = el(
     "tr",
     {},
@@ -104,11 +136,11 @@ function renderResults(location, results) {
     el(
       "section",
       {},
-      el("h2", {}, `Leitarniðurstöður fyrir: ${location.title}`),
+      el("h2", {}, `${location.title} þann ${date.toLocaleDateString()}`),
       el(
         "p",
         {},
-        `Spá fyrir daginn á breiddargráðu ${location.lat} og lengdargráðu ${location.lng}`,
+        `Spá fyrir ${date.toLocaleDateString()} á breiddargráðu ${location.lat} og lengdargráðu ${location.lng}`,
       ),
       resultsTable,
     ),
@@ -136,19 +168,27 @@ function renderLoading() {
  * Framkvæmir leit að veðri fyrir gefna staðsetningu.
  * Birtir biðstöðu, villu eða niðurstöður í viðmóti.
  * @param {SearchLocation} location Staðsetning sem á að leita eftir.
+ * @param {Date} date Dagsetning sem á að leita eftir.
  */
-async function onSearch(location) {
+async function onSearch(location, date) {
+  if (location === undefined) {
+    console.log(location);
+    renderIntoResultsContent(el("p", {}, "Fyrst þarf að velja staðsetningu"));
+    return;
+  }
   renderLoading();
 
   let results;
   try {
     results = await weatherSearch(location.lat, location.lng);
+    results = results.filter(x => new Date(x.time).getDate() === date.getDate());
+    selectedLocation = location;
   } catch (error) {
     renderError(error);
     return;
   }
 
-  renderResults(location, results ?? []);
+  renderResults(location, date, results ?? []);
 }
 
 async function onGeolocationSuccess(pos) {
@@ -163,6 +203,8 @@ async function onGeolocationSuccess(pos) {
   let results;
   try {
     results = await weatherSearch(location.lat, location.lng);
+    results = results.filter(x => new Date(x.time).getDate() === new Date().getDate());
+    selectedLocation = location;
   } catch (error) {
     renderError(error);
     return;
@@ -257,20 +299,39 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   const liButtonElement = renderLocationButton(
     "Mín staðsetning (þarf leyfi)",
     () => {
-      console.log("Halló!!");
       onSearchMyLocation();
     },
   );
   locationsListElement.appendChild(liButtonElement);
 
+  parentElement.appendChild(locationsElement);
+
   // <div class="loctions"><ul class="locations__list"><li><li><li></ul></div>
   for (const location of locations) {
     const liButtonElement = renderLocationButton(location.title, () => {
-      console.log("Halló!!", location);
-      onSearch(location);
+      onSearch(location, new Date());
     });
     locationsListElement.appendChild(liButtonElement);
   }
+
+  // takkar fyrir aðrar dagsetningar
+  const h3Element = document.createElement("h3");
+  h3Element.appendChild(document.createTextNode("Dagsetning"));
+  locationsElement.appendChild(h3Element);
+
+  // Búa til <ul class="dates__list">
+  const datesListElement = document.createElement("ul");
+  datesListElement.classList.add("dates__list");
+
+  createDates();
+  for (const date of dates) {
+    const liButtonElement = renderLocationButton(date.title, () => {
+      onSearch(selectedLocation, date.date);
+    });
+    datesListElement.appendChild(liButtonElement);
+  }
+
+  locationsElement.appendChild(datesListElement);
 
   parentElement.appendChild(locationsElement);
 
@@ -283,3 +344,4 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
 // Þetta fall býr til grunnviðmót og setur það í `document.body`
 render(document.body, locations, onSearch, onSearchMyLocation);
+
