@@ -56,8 +56,8 @@ let dates = [];
 
 /**
  * Bætir dögum við dagsetningu.
- * @param {Date} date 
- * @param {number} days 
+ * @param {Date} date
+ * @param {number} days
  * @returns Nýrri dagsetningu
  */
 function addDays(date, days) {
@@ -105,11 +105,11 @@ function renderResults(location, date, results) {
     {},
     el("th", {}, "Tími"),
     el("th", {}, "Hiti (C°)"),
-    el("th", {}, "Úrkoma (mm)"),
+    el("th", {}, "Úrkoma (mm)")
   );
   console.log(results);
 
-  const resultsTable = el("table", { class: "forecast" }, header);
+  const resultsTable = el("table", { class: "table" }, header);
 
   for (let i = 0; i < results.length; i++) {
     const time = new Date(results[i].time).toLocaleTimeString([], {
@@ -126,7 +126,7 @@ function renderResults(location, date, results) {
       {},
       el("td", {}, time),
       el("td", {}, temperature),
-      el("td", {}, precipitation),
+      el("td", {}, precipitation)
     );
 
     resultsTable.appendChild(row);
@@ -140,10 +140,10 @@ function renderResults(location, date, results) {
       el(
         "p",
         {},
-        `Spá fyrir ${date.toLocaleDateString()} á breiddargráðu ${location.lat} og lengdargráðu ${location.lng}`,
+        `Spá fyrir ${date.toLocaleDateString()} á breiddargráðu ${location.lat} og lengdargráðu ${location.lng}`
       ),
-      resultsTable,
-    ),
+      resultsTable
+    )
   );
 }
 
@@ -154,14 +154,16 @@ function renderResults(location, date, results) {
 function renderError(error) {
   console.log(error);
   const message = error.message;
-  renderIntoResultsContent(el("p", {}, `Villa: ${message}`));
+  renderIntoResultsContent(
+    el("p", { class: "text-warning" }, `Villa: ${message}`)
+  );
 }
 
 /**
  * Birta biðstöðu í viðmóti.
  */
 function renderLoading() {
-  renderIntoResultsContent(el("p", {}, "Leita..."));
+  renderIntoResultsContent(el("p", { class: "text-success" }, "Leita..."));
 }
 
 /**
@@ -173,7 +175,9 @@ function renderLoading() {
 async function onSearch(location, date) {
   if (location === undefined) {
     console.log(location);
-    renderIntoResultsContent(el("p", {}, "Fyrst þarf að velja staðsetningu"));
+    renderIntoResultsContent(
+      el("p", { class: "text-warning" }, "Fyrst þarf að velja staðsetningu")
+    );
     return;
   }
   renderLoading();
@@ -181,7 +185,9 @@ async function onSearch(location, date) {
   let results;
   try {
     results = await weatherSearch(location.lat, location.lng);
-    results = results.filter(x => new Date(x.time).getDate() === date.getDate());
+    results = results.filter(
+      (x) => new Date(x.time).getDate() === date.getDate()
+    );
     selectedLocation = location;
   } catch (error) {
     renderError(error);
@@ -203,7 +209,9 @@ async function onGeolocationSuccess(pos) {
   let results;
   try {
     results = await weatherSearch(location.lat, location.lng);
-    results = results.filter(x => new Date(x.time).getDate() === new Date().getDate());
+    results = results.filter(
+      (x) => new Date(x.time).getDate() === new Date().getDate()
+    );
     selectedLocation = location;
   } catch (error) {
     renderError(error);
@@ -225,7 +233,7 @@ function onGeolocationError(err) {
 async function onSearchMyLocation() {
   navigator.geolocation.getCurrentPosition(
     onGeolocationSuccess,
-    onGeolocationError,
+    onGeolocationError
   );
 }
 
@@ -239,22 +247,9 @@ function renderLocationButton(locationTitle, onSearch) {
   // Notum `el` fallið til að búa til element og spara okkur nokkur skref.
   const locationElement = el(
     "li",
-    { class: "locations__location" },
-    el(
-      "button",
-      { class: "locations__button", click: onSearch },
-      locationTitle,
-    ),
+    {},
+    el("button", { class: "btn", click: onSearch }, locationTitle)
   );
-
-  /* Til smanburðar við el fallið ef við myndum nota DOM aðgerðir
-  const locationElement = document.createElement('li');
-  locationElement.classList.add('locations__location');
-  const locationButton = document.createElement('button');
-  locationButton.appendChild(document.createTextNode(locationTitle));
-  locationButton.addEventListener('click', onSearch);
-  locationElement.appendChild(locationButton);
-  */
 
   return locationElement;
 }
@@ -269,7 +264,7 @@ function renderLocationButton(locationTitle, onSearch) {
 function render(container, locations, onSearch, onSearchMyLocation) {
   // Búum til <main> og setjum `weather` class
   const parentElement = document.createElement("main");
-  parentElement.classList.add("weather");
+  parentElement.classList.add("row-gap-4");
 
   // Búum til <header> með beinum DOM aðgerðum
   const headerElement = document.createElement("header");
@@ -280,33 +275,31 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
   // Búa til <div class="loctions">
   const locationsElement = document.createElement("div");
-  locationsElement.classList.add("locations");
   locationsElement.appendChild(
-    document.createTextNode("Veldu stað til að sjá hita- og úrkomuspá"),
+    document.createTextNode("Veldu stað til að sjá hita- og úrkomuspá")
   );
 
   const h2Element = document.createElement("h2");
   h2Element.appendChild(document.createTextNode("Staðsetningar"));
+  h2Element.classList.add("card-subtitle");
   locationsElement.appendChild(h2Element);
 
   // Búa til <ul class="locations__list">
   const locationsListElement = document.createElement("ul");
-  locationsListElement.classList.add("locations__list");
+  locationsListElement.classList.add("nav", "nav-tabs", "gap-5");
 
-  // <div class="loctions"><ul class="locations__list"></ul></div>
   locationsElement.appendChild(locationsListElement);
 
   const liButtonElement = renderLocationButton(
     "Mín staðsetning (þarf leyfi)",
     () => {
       onSearchMyLocation();
-    },
+    }
   );
   locationsListElement.appendChild(liButtonElement);
 
   parentElement.appendChild(locationsElement);
 
-  // <div class="loctions"><ul class="locations__list"><li><li><li></ul></div>
   for (const location of locations) {
     const liButtonElement = renderLocationButton(location.title, () => {
       onSearch(location, new Date());
@@ -317,11 +310,11 @@ function render(container, locations, onSearch, onSearchMyLocation) {
   // takkar fyrir aðrar dagsetningar
   const h3Element = document.createElement("h3");
   h3Element.appendChild(document.createTextNode("Dagsetning"));
+  h3Element.classList.add("card-subtitle");
   locationsElement.appendChild(h3Element);
 
-  // Búa til <ul class="dates__list">
   const datesListElement = document.createElement("ul");
-  datesListElement.classList.add("dates__list");
+  datesListElement.classList.add("nav", "nav-tabs", "gap-5");
 
   createDates();
   for (const date of dates) {
@@ -344,4 +337,3 @@ function render(container, locations, onSearch, onSearchMyLocation) {
 
 // Þetta fall býr til grunnviðmót og setur það í `document.body`
 render(document.body, locations, onSearch, onSearchMyLocation);
-
